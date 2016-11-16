@@ -12,7 +12,7 @@ public struct AffineTransform
 
     public func apply(toImage image: UIImage) -> UIImage?
     {
-        if matrix.scale >= 1.0 {
+        if matrix.scale >= 0.99 {
             return applyBilinear(toImage: image)
         } else {
             return applyTrilinear(toImage: image)

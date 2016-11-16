@@ -24,9 +24,15 @@ public struct AffineTransformMatrix: CustomDebugStringConvertible
 
     public var inverted: AffineTransformMatrix? {
         var isInvertible = false
-        let invertedRaw = GLKMatrix3Invert(matrix, &isInvertible)
+        var invertedRaw = GLKMatrix3Invert(matrix, &isInvertible)
         guard isInvertible else {
             return nil
+        }
+        if (isRotation) {
+            let r0 = GLKVector3Make(GLKMatrix3GetRow(invertedRaw, 0).x, -GLKMatrix3GetRow(invertedRaw, 0).y, GLKMatrix3GetRow(invertedRaw, 0).z)
+            let r1 = GLKVector3Make(-GLKMatrix3GetRow(invertedRaw, 1).x, GLKMatrix3GetRow(invertedRaw, 1).y, GLKMatrix3GetRow(invertedRaw, 1).z)
+            invertedRaw = GLKMatrix3SetRow(invertedRaw, 0, r0)
+            invertedRaw = GLKMatrix3SetRow(invertedRaw, 1, r1)
         }
         return AffineTransformMatrix(matrix: invertedRaw)
     }
@@ -39,6 +45,10 @@ public struct AffineTransformMatrix: CustomDebugStringConvertible
         return self[1, 1]
     }
 
+    public var isRotation: Bool {
+        return self[0,0] == self[1,1] && self[0,1] == -self[1, 0] && self[0,1] != 0
+    }
+
     public func apply(toPoint point: (x: Float, y: Float)) -> (x: Float, y: Float)
     {
         return (
@@ -46,7 +56,7 @@ public struct AffineTransformMatrix: CustomDebugStringConvertible
             point.x * self[0, 1] + point.y * self[1, 1] + self[2, 1]
         )
     }
-
+    
     public func sizeOfTransformed(rectOfSize size: CGSize) -> CGSize
     {
         let upleft = apply(toPoint: (0, 0))
@@ -87,7 +97,6 @@ public struct AffineTransformMatrix: CustomDebugStringConvertible
         }
     }
 
-    // TODO: review this
     public var scale: Float {
         let x1 = self[0, 0]
         let y1 = self[1, 0]
@@ -123,9 +132,9 @@ public struct AffineTransformMatrix: CustomDebugStringConvertible
     public init(matrix: [[Float]])
     {
         self.matrix = GLKMatrix3(m: (
-            matrix[0][0], matrix[0][1], matrix[0][2],
-            matrix[1][0], matrix[1][1], matrix[1][2],
-            matrix[2][0], matrix[2][1], matrix[2][2]
+            matrix[0][0], matrix[0][1], matrix[2][0],
+            matrix[1][0], matrix[1][1], matrix[2][1],
+            matrix[0][2], matrix[1][2], matrix[2][2]
         ))
     }
 
